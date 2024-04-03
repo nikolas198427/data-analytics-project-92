@@ -71,3 +71,66 @@ group by seller, day_of_week, num_day
 select seller, day_of_week, income
 from num1
 order by num_day, seller;
+
+
+--Первый отчет - количество покупателей в разных возрастных группах: 16-25, 26-40 и 40+. 
+--Итоговая таблица должна быть отсортирована по возрастным группам и содержать следующие поля:
+--
+--age_category - возрастная группа
+--count - количество человек в группе
+
+select 
+  case 
+    when  age between  16 and  25 then  '16-25'
+    when  age between  26 and  40 then  '26-40'
+    else  '40+'
+  end  as  age_category,
+  count( * ) as  count
+from 
+  customers
+group  by age_category
+order  by age_category;
+
+
+--Во втором отчете предоставьте данные по количеству уникальных покупателей и выручке, которую они принесли. 
+--Сгруппируйте данные по дате, которая представлена в числовом виде ГОД-МЕСЯЦ. 
+--Итоговая таблица должна быть отсортирована по дате по возрастанию и содержать следующие поля:
+--
+--date - дата в указанном формате
+--total_customers - количество покупателей
+--income - принесенная выручка
+
+select to_char(sale_date, 'yyyy-mm') as date,  count(distinct customer_id) as total_customers, round(sum(price), 0) as income
+from sales
+inner join products
+on sales.product_id  = products.product_id 
+group by date
+order by date
+
+--Третий отчет следует составить о покупателях, первая покупка которых была в ходе проведения акций (акционные товары отпускали со стоимостью равной 0). 
+--Итоговая таблица должна быть отсортирована по id покупателя. Таблица состоит из следующих полей:
+--
+--customer - имя и фамилия покупателя
+--sale_date - дата покупки
+--seller - имя и фамилия продавца
+
+with tab1 as (
+select  customers.first_name ||' '||   customers.last_name as customer
+, sale_date
+, ROW_NUMBER() OVER (PARTITION BY sales_person_id order by sale_date ) AS sale_number
+, price
+, employees.first_name ||' '||   employees.last_name as seller
+from sales
+inner join products
+on sales.product_id  = products.product_id 
+inner join customers
+on sales.customer_id = customers.customer_id
+inner join employees
+on sales_person_id = employee_id
+order by sales_person_id
+)
+select customer, sale_date, seller
+--, sale_number , price
+from tab1
+where sale_number=1 and price = 0
+
